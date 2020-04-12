@@ -16,7 +16,7 @@ import dbs from "./dbs"
 import "babel-polyfill";
 const passport = require("passport");       //引入passport插件
 
-
+var compression = require('compression')
 app.all('*', function(req, res, next) {
     //设置允许跨域的域名，*代表允许任意域名跨域
     res.header("Access-Control-Allow-Origin", "*");
@@ -45,6 +45,10 @@ mongoose.connect(dbs.data_url,{
         console.log("连接数据库成功");
     }
 })
+
+
+//尽量在其他中间件前使用compression
+app.use(compression());
 
 // 1.配置公共资源访问；路径
 

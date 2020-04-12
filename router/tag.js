@@ -4,7 +4,7 @@ const express = require("express");
 const router = express.Router();
 
 router.get('/getAllTags',async (req,res)=>{
-
+    console.log("我来了");
     let tags = await Tag.find({})
     if (tags.length>0){
         res.json({
