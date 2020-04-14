@@ -88,7 +88,7 @@ app.use('/api/album',album)
 //     console.log(path.join(config.publicPath, './dist', 'index.html'));
 //     res.sendFile(path.join(config.publicPath, './dist/index.html'))
 // })
-app.use(express.static(path.join(config.publicPath, 'dist')))
+app.use(express.static(path.join(config.publicPath, 'dist'), { maxAge: 60 * 1000 * 60 * 24 * 365 }))
 app.set("views",path.join(config.publicPath, 'dist'))
 console.log(path.join(config.publicPath, 'dist'));
 
