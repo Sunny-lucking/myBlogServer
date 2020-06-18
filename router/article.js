@@ -8,7 +8,6 @@ const express = require("express");
 const router = express.Router();
 router.post('/deleteArticle',async (req,res)=>{
     let {_id}  = req.body
-    // console.log(_id, children);
     let {deletedCount} = await Article.deleteOne({_id})
     if (deletedCount===1){
         return res.json({
@@ -28,8 +27,6 @@ router.post('/editOneArticle',async(req,res)=>{
    try {
        const {_id} = req.body;
        const {title,content,summary,username,tag} = req.body;
-       console.log(title,content,summary,username,tag);
-       console.log(_id);
        let {nModified} = await Article.updateOne({_id},{title,content,summary,username,tag})
        if (nModified===1){
            res.json({
@@ -76,7 +73,6 @@ router.get('/getArticle',async (req,res)=>{
 //前端
 router.post('/increaseFeelingOfArticle',async (req,res) =>{
     let { articleID ,attrName } = req.body
-    console.log(articleID);
     let article = await Article.find({_id:articleID})
     switch (attrName) {
         case 'praise':
@@ -139,7 +135,8 @@ router.get('/getArticleOfRandom',async (req,res) =>{
     }
 })
 router.get('/getArticleOfLatest',async (req,res) =>{
-    let articles = await Article.find({}).sort({'time':-1}).limit(10);
+    let {pageNum} = req.query
+    let articles = await Article.find({}).sort({'time':-1}).skip(pageNum*10).limit(10);
 
     if(articles){
         return res.json({
@@ -155,17 +152,13 @@ router.get('/getArticleOfLatest',async (req,res) =>{
 })
 router.get('/getArticleByTagName',async (req,res) =>{
     let { tagName ,pageIndex, size} = req.query
-    console.log("标签明");
-    console.log(tagName);
-    console.log(pageIndex);
     let index = parseInt(pageIndex)
     let pageSize = parseInt(size)
     let tagname = encodeURI(tagName)
-    console.log(tagname);
-    console.log(size);
     let article = await Article.find({tag:tagName}).skip((index-1)*pageSize).limit(pageSize).sort({'time':-1})
     let articleOfHot = await Article.find({tag:tagName}).limit(6).sort({'pvcount':-1})
-    let count = await Article.find({tag:tagName}).estimatedDocumentCount()
+    let count = await Article.find({tag:tagName}).countDocuments();
+    console.log(count);
     if(article){
         return res.json({
             article,
@@ -182,17 +175,12 @@ router.get('/getArticleByTagName',async (req,res) =>{
 })
 router.get('/getArticleByKeyWord',async (req,res) =>{
     let { keyWord ,pageIndex, size} = req.query
-    console.log(keyWord);
-    console.log(pageIndex);
     let index = parseInt(pageIndex)
     let pageSize = parseInt(size)
-    let keyword = encodeURI(keyWord)
     const reg = new RegExp(keyWord,'i')
-    console.log(keyword);
-    console.log(size);
     let article = await Article.find({title:{$regex:reg}}).skip((index-1)*pageSize).limit(pageSize).sort({'time':-1})
     let articleOfHot = await Article.find({title:{$regex:reg}}).limit(6).sort({'pvcount':-1})
-    let count = await Article.find({title:{$regex:reg}}).estimatedDocumentCount()
+    let count = await Article.find({title:{$regex:reg}}).countDocuments()
     if(article){
         return res.json({
             article,
@@ -207,8 +195,29 @@ router.get('/getArticleByKeyWord',async (req,res) =>{
         })
     }
 })
+router.get('/getTitleListByKeyWord',async (req,res) =>{
+    let { keyWord } = req.query
+    let titleList;
+    const reg = new RegExp(keyWord,'i')
+    if (keyWord.trim() === ''){
+        titleList = []
+    } else {
+        titleList = await Article.find({title:{$regex:reg}}, { Id: 1, title: 1 } )
+    }
+
+
+    if(titleList.length>0){
+        return res.json({
+            titleList,
+        })
+    }else{
+        return res.json({
+            code:-1,
+            mgs:"获取失败"
+        })
+    }
+})
 router.post('/addArticle',async (req,res) =>{
-    console.log("我写文章啦");
     let form = new formidable.IncomingForm();
     form.uploadDir = config.publicPath;
     form.keepExtensions = true
@@ -216,8 +225,6 @@ router.post('/addArticle',async (req,res) =>{
         if (err) return err;
         let cover = basename(files.image.path)
         const {title,content,userId,username,time,tag,summary} = fields
-        console.log(cover,title, content, userId, username, time, tag, summary);
-        // return res.json({fields,cover})
         const result = await Article.create({title,content,cover,userId,username,time:new Date().getTime(),tag,summary})
         if(result){
             let tagInfo = await axios.post('http://localhost:5001/api/tag/addTag',{tagName:tag,articleID:result._id})
@@ -262,8 +269,6 @@ router.get('/getNextAndLast',async (req,res)=>{
     try {
         nextArticle = await Article.find({'_id':{'$gt':articleID}},{_id:1,title:1}).sort({'_id':1}).limit(1)
         lastArticle = await Article.find({'_id':{'$lt':articleID},},{_id:1,title:1}).sort({'_id':-1}).limit(1)
-        console.log(nextArticle);
-        console.log(lastArticle);
         return res.json({
             nextArticle:nextArticle,
             lastArticle:lastArticle,
@@ -271,7 +276,6 @@ router.get('/getNextAndLast',async (req,res)=>{
             msg:'获取成功'
         })
     }catch (e) {
-        console.log(e);
         return res.json({
             nextArticle:{title:'没有下一篇了',_id:''},
             lastArticle:{title:'没有上一篇了',_id:''},

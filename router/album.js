@@ -5,7 +5,7 @@ import formidable from "formidable"
 import config from "./../src/config"
 const express = require("express");
 const router = express.Router();
-
+let fs = require('fs');
 router.get('/getAlbum',async (req,res) =>{
 
     let {userId}  = req.query;
@@ -115,5 +115,12 @@ router.post('/changeAvatar', (req,res) =>{
 //     }
 //
 // })
+router.get('/getAllImage',async (req,res)=>{
+    var files = await fs.readdirSync('public');
 
+    files.shift();
+    res.json({
+        imageList:files
+    })
+})
 module.exports = router;
